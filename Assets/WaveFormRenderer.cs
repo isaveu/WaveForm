@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI.Extensions;
+
 
 public class WaveFormRenderer : MonoBehaviour
 {
@@ -15,19 +17,19 @@ public class WaveFormRenderer : MonoBehaviour
 
 	float Spacing;
 
-	LineRenderer Wave;
-	Vector3[] Points;
+	UILineRenderer Wave;
+	Vector2[] Points;
 	// Use this for initialization
 	void Start()
 	{
 		Spacing = Size / (float)Resolution;
-		Points = new Vector3[Resolution];
+		Points = new Vector2[Resolution];
 		for (int i = 0; i < Resolution; i++)
-			Points[i] = new Vector3(i * Spacing, 0f, 0f);
-		Wave = GetComponent<LineRenderer>();
-		Wave.positionCount = Resolution;
-		Wave.SetPositions(Points);
-		Wave.startWidth = Wave.endWidth = 0.1f;
+			Points[i] = new Vector2();
+		Wave = GetComponent<UILineRenderer>();
+		//Wave.positionCount = Resolution;
+		Wave.Points = Points;
+		//Wave.startWidth = Wave.endWidth = 0.1f;
 	}
 
 	// Update is called once per frame
@@ -40,7 +42,7 @@ public class WaveFormRenderer : MonoBehaviour
 			//Points[i].y = Mathf.Sin(Points[i].x * Frequency - Time.time * Speed) * Amplitude;
 			Points[i].y = Curve.Evaluate(Points[i].x * Frequency - Time.time * Speed) * Amplitude;
 		}
-		Wave.SetPositions(Points);
+		Wave.Points = Points;
 	}
 
 	public void OnFrequencyChange(float value)
@@ -63,9 +65,9 @@ public class WaveFormRenderer : MonoBehaviour
 	{
 		Resolution = 2 + (10*(int)value);
 		Debug.Log(Resolution.ToString());
-		Wave.positionCount = Resolution;
-		Points = new Vector3[Resolution];
+		//Wave.positionCount = Resolution;
+		Points = new Vector2[Resolution];
 		for (int i = 0; i < Resolution; i++)
-			Points[i] = new Vector3();
+			Points[i] = new Vector2();
 	}
 }
