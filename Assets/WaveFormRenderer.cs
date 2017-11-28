@@ -6,68 +6,158 @@ using UnityEngine.UI.Extensions;
 
 public class WaveFormRenderer : MonoBehaviour
 {
-	public int Resolution;
-	public float Size;
-	public float Speed;
-	public float Frequency;
-	public float Amplitude;
-	public Color WaveColor;
+	[HideInInspector]
+	public AnimationCurve curve;
 
-	public AnimationCurve Curve;
+	private float Amplitude = 1f;
+	private float Frequency = 2f;
+	private float Speed = 0.5f;
+	private float height;
+	private float width;
+	private float lifetime = 1f;
+	private float minimumVertexDistance = 0.01f;
+	private float positionx;
+	private float lastPositionx;
+	private float timex;
+	private float lastTimex;
+	private float maxTime;
+	private float t, a, b;
+	private float noise = 0.01f;
 
-	float Spacing;
+	private Vector2 velocity;
+	private Vector2 markerPosition;
+	private Vector2 tempPosition;
 
-	UILineRenderer Wave;
-	Vector2[] Points;
-	// Use this for initialization
-	void Start()
+	private UILineRenderer line;
+	private List<Vector2> points;
+	private List<float> pointsLifetime;
+	private Queue<float> spawnTimes = new Queue<float>();
+	private RectTransform rectTransform;
+
+	void Awake()
 	{
-		Spacing = Size / (float)Resolution;
-		Points = new Vector2[Resolution];
-		for (int i = 0; i < Resolution; i++)
-			Points[i] = new Vector2();
-		Wave = GetComponent<UILineRenderer>();
-		//Wave.positionCount = Resolution;
-		Wave.Points = Points;
-		//Wave.startWidth = Wave.endWidth = 0.1f;
+		markerPosition = transform.position;
+		line = GetComponent<UILineRenderer>();
+		line.RelativeSize = false;
+		points = new List<Vector2>() { markerPosition };
+		pointsLifetime = new List<float>() { Time.time };
+		line.Points = points.ToArray();
+		rectTransform = GetComponent<RectTransform>();
+		width = rectTransform.rect.size.x;
+		height = rectTransform.rect.size.y / 2f;
+		minimumVertexDistance = (width / 2000f);
+		minimumVertexDistance = minimumVertexDistance > 0.01f ? 0.01f : minimumVertexDistance;
+		line.CrossFadeColor(Color.green, lifetime, false, true);
+		SetSpeed(Speed);
+		timex = 0f;
+		lastTimex = 0f;
+		maxTime = curve.keys[curve.keys.Length - 1].time;
 	}
 
-	// Update is called once per frame
-	void FixedUpdate()
+	void AddPoint(Vector3 position)
 	{
-		Spacing = Size / (float)Resolution;
-		for (int i = 0; i < Resolution; i++)
+		points.Insert(1, position);
+		pointsLifetime.Insert(1, Time.time);
+		spawnTimes.Enqueue(Time.time);
+	}
+
+	void RemovePoint()
+	{
+		spawnTimes.Dequeue();
+		points.RemoveAt(points.Count - 1);
+		pointsLifetime.RemoveAt(pointsLifetime.Count - 1);
+	}
+
+	void Update()
+	{
+		positionx += Time.deltaTime * Speed * width;
+		timex += Time.deltaTime * Frequency;
+		if (timex > maxTime)
 		{
-			Points[i].x = i * Spacing;
-			//Points[i].y = Mathf.Sin(Points[i].x * Frequency - Time.time * Speed) * Amplitude;
-			Points[i].y = Curve.Evaluate(Points[i].x * Frequency - Time.time * Speed) * Amplitude;
+			timex -= maxTime;
 		}
-		Wave.Points = Points;
+		if (positionx > width)
+		{
+			positionx = width;
+			timex = maxTime;
+		}
+		else
+		{
+			markerPosition = Vector2.up * height * curve.Evaluate(timex) * Amplitude;
+			markerPosition.y += 0.1f * height * Random.Range(1f - noise, 1f + noise);
+			markerPosition.x += positionx;
+		}
+
+		while (spawnTimes.Count > 0 && spawnTimes.Peek() + lifetime < Time.time)
+		{
+			RemovePoint();
+		}
+		if (positionx < width)
+		{
+			for (int i = 0; i < curve.keys.Length; i++)
+			{
+				if (curve.keys[i].time > lastTimex && curve.keys[i].time < timex)
+				{
+					t = timex - lastTimex;
+					a = curve.keys[i].time - lastTimex;
+					tempPosition = Vector2.up * height * curve.Evaluate(timex) * Amplitude;
+					tempPosition.y += 0.1f * height * Random.Range(1f - noise, 1f + noise);
+					tempPosition.x = lastPositionx + ((markerPosition.x - lastPositionx) * (a / t));
+					AddPoint(tempPosition);
+				}
+			}
+		}
+		if (points.Count < 2 || Vector2.Distance(markerPosition, points[1]) > minimumVertexDistance)
+		{
+			AddPoint(markerPosition);
+		}
+
+
+		points[0] = markerPosition;
+
+		line.Points = points.ToArray();
+		line.Lifetime = pointsLifetime.ToArray();
+		lastTimex = timex;
+		lastPositionx = markerPosition.x;
 	}
 
-	public void OnFrequencyChange(float value)
+
+	public void SetFrequency(float value)
 	{
 		Frequency = value;
 	}
-	public void OnAmplitudeChange(float value)
+	public void SetAmplitude(float value)
 	{
 		Amplitude = value;
 	}
-	public void OnSpeedChange(float value)
+	public void SetSpeed(float value)
 	{
 		Speed = value;
+		lifetime = 1f / Speed;
+		line.LineLifetime = lifetime;
+		velocity.x = width * Speed;
 	}
-	public void OnSizeChange(float value)
+
+	public void ResetWave(bool value)
 	{
-		Size = value;
+		if (!value)
+			return;
+		positionx = 0f;
+		markerPosition.x = 0;
+		spawnTimes.Clear();
+		points.Clear();
+		pointsLifetime.Clear();
+		points.Add(markerPosition);
+		pointsLifetime.Add(Time.deltaTime);
+		line.Points = points.ToArray();
 	}
-	public void OnResolutionChange(float value)
+	public void SetColor(UnityEngine.Gradient gradient)
 	{
-		Resolution = 2 + (10*(int)value);
-		Debug.Log(Resolution.ToString());
-		//Wave.positionCount = Resolution;
-		Points = new Vector2[Resolution];
-		for (int i = 0; i < Resolution; i++)
-			Points[i] = new Vector2();
+		line.lineColor = gradient;
+	}
+	public void SetNoise(float value)
+	{
+		noise = value;
 	}
 }
+

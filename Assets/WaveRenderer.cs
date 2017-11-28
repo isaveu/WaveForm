@@ -21,6 +21,7 @@ public class WaveRenderer : MonoBehaviour
 
 	UILineRenderer line;
 	List<Vector2> points;
+	List<float> pointsLifetime;
 	Queue<float> spawnTimes = new Queue<float>();
 	RectTransform rectTransform;
 
@@ -30,6 +31,7 @@ public class WaveRenderer : MonoBehaviour
 		line = GetComponent<UILineRenderer>();
 		line.RelativeSize = false;
 		points = new List<Vector2>() { markerPosition };
+		pointsLifetime = new List<float>() { Time.time };
 		line.Points = points.ToArray();
 		rectTransform = GetComponent<RectTransform>();
 		width = rectTransform.rect.size.x;
@@ -42,6 +44,7 @@ public class WaveRenderer : MonoBehaviour
 	void AddPoint(Vector3 position)
 	{
 		points.Insert(1, position);
+		pointsLifetime.Insert(1, Time.time);
 		spawnTimes.Enqueue(Time.time);
 	}
 
@@ -49,6 +52,7 @@ public class WaveRenderer : MonoBehaviour
 	{
 		spawnTimes.Dequeue();
 		points.RemoveAt(points.Count - 1);
+		pointsLifetime.RemoveAt(pointsLifetime.Count - 1);
 	}
 
 	void Update()
@@ -75,6 +79,7 @@ public class WaveRenderer : MonoBehaviour
 
 		//line.positionCount = points.Count;
 		line.Points = points.ToArray();
+		line.Lifetime = pointsLifetime.ToArray();
 	}
 
 
@@ -90,6 +95,7 @@ public class WaveRenderer : MonoBehaviour
 	{
 		Speed = value;
 		lifetime = 1f / Speed;
+		line.LineLifetime = lifetime;
 		velocity.x = width * Speed;
 	}
 }
