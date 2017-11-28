@@ -92,7 +92,7 @@ GameObject:
   - component: {fileID: 222321830307893482}
   - component: {fileID: 114394011041715140}
   m_Layer: 5
-  m_Name: WavePanel1
+  m_Name: WaveFormPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -106,7 +106,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1298974371648026}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3aedf47debdfef549aba112de08697bd, type: 3}
+  m_Script: {fileID: 11500000, guid: fffc747bc882f66459c3c4b3bd7c6088, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
@@ -383,7 +383,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1708049381247284}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3aedf47debdfef549aba112de08697bd, type: 3}
+  m_Script: {fileID: 11500000, guid: fffc747bc882f66459c3c4b3bd7c6088, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
@@ -513,7 +513,7 @@ RectTransform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1755717197241096}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 257, y: 89, z: 0}
+  m_LocalPosition: {x: 57, y: 89, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 224251268229786400}
@@ -522,7 +522,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 257, y: 89}
+  m_AnchoredPosition: {x: 57, y: 89}
   m_SizeDelta: {x: 272.2, y: 163.8}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!224 &224251268229786400

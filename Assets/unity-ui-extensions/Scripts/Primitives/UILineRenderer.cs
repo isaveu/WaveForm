@@ -6,107 +6,101 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UI.Extensions
 {
-	[AddComponentMenu("UI/Extensions/Primitives/UILineRenderer")]
-	[RequireComponent(typeof(RectTransform))]
-	public class UILineRenderer : UIPrimitiveBase
+    [AddComponentMenu("UI/Extensions/Primitives/UILineRenderer")]
+    [RequireComponent(typeof(RectTransform))]
+    public class UILineRenderer : UIPrimitiveBase
 	{
 		private enum SegmentType
 		{
 			Start,
-			Middle,
-			End,
-			Full,
+            Middle,
+            End,
+            Full,
 		}
 
 		public enum JoinType
 		{
 			Bevel,
-			Miter
+            Miter
 		}
 
 		public enum BezierType
 		{
 			None,
-			Quick,
-			Basic,
-			Improved,
-			Catenary,
-		}
+            Quick,
+            Basic,
+            Improved,
+            Catenary,
+        }
 
 		private const float MIN_MITER_JOIN = 15 * Mathf.Deg2Rad;
 
 		// A bevel 'nice' join displaces the vertices of the line segment instead of simply rendering a
 		// quad to connect the endpoints. This improves the look of textured and transparent lines, since
 		// there is no overlapping.
-		private const float MIN_BEVEL_NICE_JOIN = 30 * Mathf.Deg2Rad;
+        private const float MIN_BEVEL_NICE_JOIN = 30 * Mathf.Deg2Rad;
 
 		private static Vector2 UV_TOP_LEFT, UV_BOTTOM_LEFT, UV_TOP_CENTER_LEFT, UV_TOP_CENTER_RIGHT, UV_BOTTOM_CENTER_LEFT, UV_BOTTOM_CENTER_RIGHT, UV_TOP_RIGHT, UV_BOTTOM_RIGHT;
 		private static Vector2[] startUvs, middleUvs, endUvs, fullUvs;
 
-		[SerializeField, Tooltip("Points to draw lines between\n Can be improved using the Resolution Option")]
-		internal Vector2[] m_points;
-		internal float[] m_lifetime;
+        [SerializeField, Tooltip("Points to draw lines between\n Can be improved using the Resolution Option")]
+        internal Vector2[] m_points;
 
-		[SerializeField, Tooltip("Gradient Color of the line")]
-		internal UnityEngine.Gradient lineColor;
-		[SerializeField, Tooltip("Lifetime of the points")]
-		internal float lifetime = 0f;
+        [SerializeField, Tooltip("Thickness of the line")]
+        internal float lineThickness = 2;
+        [SerializeField, Tooltip("Use the relative bounds of the Rect Transform (0,0 -> 0,1) or screen space coordinates")]
+        internal bool relativeSize;
+        [SerializeField, Tooltip("Do the points identify a single line or split pairs of lines")]
+        internal bool lineList;
+        [SerializeField, Tooltip("Add end caps to each line\nMultiple caps when used with Line List")]
+        internal bool lineCaps;
+        [SerializeField, Tooltip("Resolution of the Bezier curve, different to line Resolution")]
+        internal int bezierSegmentsPerCurve = 10;
 
-		[SerializeField, Tooltip("Thickness of the line")]
-		internal float lineThickness = 2;
-		[SerializeField, Tooltip("Use the relative bounds of the Rect Transform (0,0 -> 0,1) or screen space coordinates")]
-		internal bool relativeSize;
-		[SerializeField, Tooltip("Do the points identify a single line or split pairs of lines")]
-		internal bool lineList;
-		[SerializeField, Tooltip("Add end caps to each line\nMultiple caps when used with Line List")]
-		internal bool lineCaps;
-		[SerializeField, Tooltip("Resolution of the Bezier curve, different to line Resolution")]
-		internal int bezierSegmentsPerCurve = 10;
+        public float LineThickness
+        {
+            get { return lineThickness; }
+            set { lineThickness = value; SetAllDirty(); }
+        }
 
-		public float LineThickness
-		{
-			get { return lineThickness; }
-			set { lineThickness = value; SetAllDirty(); }
-		}
+        public bool RelativeSize
+        {
+            get { return relativeSize; }
+            set { relativeSize = value; SetAllDirty(); }
+        }
 
-		public bool RelativeSize
-		{
-			get { return relativeSize; }
-			set { relativeSize = value; SetAllDirty(); }
-		}
+        public bool LineList
+        {
+            get { return lineList; }
+            set { lineList = value; SetAllDirty(); }
+        }
 
-		public bool LineList
-		{
-			get { return lineList; }
-			set { lineList = value; SetAllDirty(); }
-		}
+        public bool LineCaps
+        {
+            get { return lineCaps; }
+            set { lineCaps = value; SetAllDirty(); }
+        }
 
-		public bool LineCaps
-		{
-			get { return lineCaps; }
-			set { lineCaps = value; SetAllDirty(); }
-		}
-
-		[Tooltip("The type of Join used between lines, Square/Mitre or Curved/Bevel")]
+        [Tooltip("The type of Join used between lines, Square/Mitre or Curved/Bevel")]
 		public JoinType LineJoins = JoinType.Bevel;
 
-		[Tooltip("Bezier method to apply to line, see docs for options\nCan't be used in conjunction with Resolution as Bezier already changes the resolution")]
-		public BezierType BezierMode = BezierType.None;
+        [Tooltip("Bezier method to apply to line, see docs for options\nCan't be used in conjunction with Resolution as Bezier already changes the resolution")]
+        public BezierType BezierMode = BezierType.None;
 
-		public int BezierSegmentsPerCurve
-		{
-			get { return bezierSegmentsPerCurve; }
-			set { bezierSegmentsPerCurve = value; }
-		}
+        public int BezierSegmentsPerCurve
+        {
+            get { return bezierSegmentsPerCurve; }
+            set { bezierSegmentsPerCurve = value; }
+        }
 
-		[HideInInspector]
-		public bool drivenExternally = false;
+        [HideInInspector]
+        public bool drivenExternally = false;
 
 
 		/// <summary>
 		/// Points to be drawn in the line.
 		/// </summary>
-		public Vector2[] Points
+        public Vector2[] Points
 		{
 			get
 			{
@@ -121,48 +115,15 @@ namespace UnityEngine.UI.Extensions
 				SetAllDirty();
 			}
 		}
-		/// <summary>
-		/// Points to be drawn in the line.
-		/// </summary>
-		public float[] Lifetime
-		{
-			get
-			{
-				return m_lifetime;
-			}
 
-			set
-			{
-				if (m_lifetime == value)
-					return;
-				m_lifetime = value;
-				SetAllDirty();
-			}
-		}
-		public float LineLifetime
-		{
-			get
-			{
-				return lifetime;
-			}
-
-			set
-			{
-				if (lifetime == value)
-					return;
-				lifetime = value;
-				SetAllDirty();
-			}
-		}
-		protected override void OnPopulateMesh(VertexHelper vh)
+        protected override void OnPopulateMesh(VertexHelper vh)
 		{
 			if (m_points == null)
 				return;
-			GeneratedUVs();
+            GeneratedUVs();
 			Vector2[] pointsToDraw = m_points;
-			float[] pointsLifetime = m_lifetime;
 			//If Bezier is desired, pick the implementation
-			if (BezierMode != BezierType.None && BezierMode != BezierType.Catenary && m_points.Length > 3)
+            if (BezierMode != BezierType.None && BezierMode != BezierType.Catenary && m_points.Length > 3)
 			{
 				BezierPath bezierPath = new BezierPath();
 
@@ -172,63 +133,61 @@ namespace UnityEngine.UI.Extensions
 				switch (BezierMode)
 				{
 					case BezierType.Basic:
-						drawingPoints = bezierPath.GetDrawingPoints0();
-						break;
+                        drawingPoints = bezierPath.GetDrawingPoints0();
+					break;
 					case BezierType.Improved:
-						drawingPoints = bezierPath.GetDrawingPoints1();
-						break;
+                        drawingPoints = bezierPath.GetDrawingPoints1();
+					break;
 					default:
-						drawingPoints = bezierPath.GetDrawingPoints2();
-						break;
+                        drawingPoints = bezierPath.GetDrawingPoints2();
+					break;
 				}
 
 				pointsToDraw = drawingPoints.ToArray();
 			}
-			if (BezierMode == BezierType.Catenary && m_points.Length == 2)
-			{
-				CableCurve cable = new CableCurve(pointsToDraw);
-				cable.slack = Resoloution;
-				cable.steps = BezierSegmentsPerCurve;
-				pointsToDraw = cable.Points();
-			}
+            if (BezierMode == BezierType.Catenary && m_points.Length == 2)
+            {
+                CableCurve cable = new CableCurve(pointsToDraw);
+                cable.slack = Resoloution;
+                cable.steps = BezierSegmentsPerCurve;
+                pointsToDraw = cable.Points();
+            }
 
-			if (ImproveResolution != ResolutionMode.None)
-			{
-				pointsToDraw = IncreaseResolution(pointsToDraw);
-			}
+            if (ImproveResolution != ResolutionMode.None)
+            {
+                pointsToDraw = IncreaseResolution(pointsToDraw);
+            }
 
-			// scale based on the size of the rect or use absolute, this is switchable
-			var sizeX = !relativeSize ? 1 : rectTransform.rect.width;
-			var sizeY = !relativeSize ? 1 : rectTransform.rect.height;
-			var offsetX = -rectTransform.pivot.x * sizeX;
-			var offsetY = -rectTransform.pivot.y * sizeY;
+            // scale based on the size of the rect or use absolute, this is switchable
+            var sizeX = !relativeSize ? 1 : rectTransform.rect.width;
+            var sizeY = !relativeSize ? 1 : rectTransform.rect.height;
+            var offsetX = -rectTransform.pivot.x * sizeX;
+            var offsetY = -rectTransform.pivot.y * sizeY;
 
 			vh.Clear();
 
 			// Generate the quads that make up the wide line
-			var segments = new List<UIVertex[]>();
+            var segments = new List<UIVertex[]>();
 			if (lineList)
 			{
 				for (var i = 1; i < pointsToDraw.Length; i += 2)
 				{
 					var start = pointsToDraw[i - 1];
 					var end = pointsToDraw[i];
-					var startLifeTime = Time.time - pointsLifetime[i - 1];
-					var endLifetime = Time.time - pointsLifetime[i];
 					start = new Vector2(start.x * sizeX + offsetX, start.y * sizeY + offsetY);
 					end = new Vector2(end.x * sizeX + offsetX, end.y * sizeY + offsetY);
 
 					if (lineCaps)
 					{
-						segments.Add(CreateLineCap(start, end, SegmentType.Start, startLifeTime, endLifetime));
+						segments.Add(CreateLineCap(start, end, SegmentType.Start));
 					}
 
 					//segments.Add(CreateLineSegment(start, end, SegmentType.Full));
-					segments.Add(CreateLineSegment(start, end, SegmentType.Middle, startLifeTime, endLifetime));
+					segments.Add(CreateLineSegment(start, end, SegmentType.Middle));
 
-					if (lineCaps)
+                    if (lineCaps)
 					{
-						segments.Add(CreateLineCap(start, end, SegmentType.End, startLifeTime, endLifetime));
+						segments.Add(CreateLineCap(start, end, SegmentType.End));
 					}
 				}
 			}
@@ -238,28 +197,26 @@ namespace UnityEngine.UI.Extensions
 				{
 					var start = pointsToDraw[i - 1];
 					var end = pointsToDraw[i];
-					var startLifeTime = Time.time - pointsLifetime[i - 1];
-					var endLifetime = Time.time - pointsLifetime[i];
 					start = new Vector2(start.x * sizeX + offsetX, start.y * sizeY + offsetY);
 					end = new Vector2(end.x * sizeX + offsetX, end.y * sizeY + offsetY);
 
 					if (lineCaps && i == 1)
 					{
-						segments.Add(CreateLineCap(start, end, SegmentType.Start, startLifeTime, endLifetime));
+						segments.Add(CreateLineCap(start, end, SegmentType.Start));
 					}
 
-					segments.Add(CreateLineSegment(start, end, SegmentType.Middle, startLifeTime, endLifetime));
+					segments.Add(CreateLineSegment(start, end, SegmentType.Middle));
 					//segments.Add(CreateLineSegment(start, end, SegmentType.Full));
 
 					if (lineCaps && i == pointsToDraw.Length - 1)
 					{
-						segments.Add(CreateLineCap(start, end, SegmentType.End, startLifeTime, endLifetime));
+						segments.Add(CreateLineCap(start, end, SegmentType.End));
 					}
 				}
 			}
 
 			// Add the line segments to the vertex helper, creating any joins as needed
-			for (var i = 0; i < segments.Count; i++)
+            for (var i = 0; i < segments.Count; i++)
 			{
 				if (!lineList && i < segments.Count - 1)
 				{
@@ -268,10 +225,10 @@ namespace UnityEngine.UI.Extensions
 					var angle = Vector2.Angle(vec1, vec2) * Mathf.Deg2Rad;
 
 					// Positive sign means the line is turning in a 'clockwise' direction
-					var sign = Mathf.Sign(Vector3.Cross(vec1.normalized, vec2.normalized).z);
+                    var sign = Mathf.Sign(Vector3.Cross(vec1.normalized, vec2.normalized).z);
 
 					// Calculate the miter point
-					var miterDistance = lineThickness / (2 * Mathf.Tan(angle / 2));
+                    var miterDistance = lineThickness / (2 * Mathf.Tan(angle / 2));
 					var miterPointA = segments[i][2].position - vec1.normalized * miterDistance * sign;
 					var miterPointB = segments[i][3].position + vec1.normalized * miterDistance * sign;
 
@@ -279,7 +236,7 @@ namespace UnityEngine.UI.Extensions
 					if (joinType == JoinType.Miter)
 					{
 						// Make sure we can make a miter join without too many artifacts.
-						if (miterDistance < vec1.magnitude / 2 && miterDistance < vec2.magnitude / 2 && angle > MIN_MITER_JOIN)
+                        if (miterDistance < vec1.magnitude / 2 && miterDistance < vec2.magnitude / 2 && angle > MIN_MITER_JOIN)
 						{
 							segments[i][2].position = miterPointA;
 							segments[i][3].position = miterPointB;
@@ -315,32 +272,32 @@ namespace UnityEngine.UI.Extensions
 
 				vh.AddUIVertexQuad(segments[i]);
 			}
-			if (vh.currentVertCount > 64000)
-			{
-				Debug.LogError("Max Verticies size is 64000, current mesh vertcies count is [" + vh.currentVertCount + "] - Cannot Draw");
-				vh.Clear();
-				return;
-			}
-		}
+            if (vh.currentVertCount > 64000)
+            {
+                Debug.LogError("Max Verticies size is 64000, current mesh vertcies count is [" + vh.currentVertCount + "] - Cannot Draw");
+                vh.Clear();
+                return;
+            }
+        }
 
-		private UIVertex[] CreateLineCap(Vector2 start, Vector2 end, SegmentType type, float startLifetime, float endLifetime)
+		private UIVertex[] CreateLineCap(Vector2 start, Vector2 end, SegmentType type)
 		{
 			if (type == SegmentType.Start)
 			{
 				var capStart = start - ((end - start).normalized * lineThickness / 2);
-				return CreateLineSegment(capStart, start, SegmentType.Start, startLifetime, endLifetime);
+				return CreateLineSegment(capStart, start, SegmentType.Start);
 			}
 			else if (type == SegmentType.End)
 			{
 				var capEnd = end + ((end - start).normalized * lineThickness / 2);
-				return CreateLineSegment(end, capEnd, SegmentType.End, startLifetime, endLifetime);
+				return CreateLineSegment(end, capEnd, SegmentType.End);
 			}
 
 			Debug.LogError("Bad SegmentType passed in to CreateLineCap. Must be SegmentType.Start or SegmentType.End");
 			return null;
 		}
 
-		private UIVertex[] CreateLineSegment(Vector2 start, Vector2 end, SegmentType type, float startLifetime, float endLifetime)
+		private UIVertex[] CreateLineSegment(Vector2 start, Vector2 end, SegmentType type)
 		{
 			Vector2 offset = new Vector2((start.y - end.y), end.x - start.x).normalized * lineThickness / 2;
 
@@ -348,81 +305,61 @@ namespace UnityEngine.UI.Extensions
 			var v2 = start + offset;
 			var v3 = end + offset;
 			var v4 = end - offset;
-
-			if (LineLifetime > 0f)
-			{
-				var startColor = lineColor.Evaluate(startLifetime / LineLifetime);
-				var endColor = lineColor.Evaluate(endLifetime / LineLifetime);
-				//Return the VDO with the correct uvs
-				switch (type)
-				{
-					case SegmentType.Start:
-						return SetVbo(new[] { v1, v2, v3, v4 }, startUvs, startColor, endColor);
-					case SegmentType.End:
-						return SetVbo(new[] { v1, v2, v3, v4 }, endUvs, startColor, endColor);
-					case SegmentType.Full:
-						return SetVbo(new[] { v1, v2, v3, v4 }, fullUvs, startColor, endColor);
-					default:
-						return SetVbo(new[] { v1, v2, v3, v4 }, middleUvs, startColor, endColor);
-				}
-			}
-			else
-			{
-				switch (type)
-				{
-					case SegmentType.Start:
-						return SetVbo(new[] { v1, v2, v3, v4 }, startUvs);
-					case SegmentType.End:
-						return SetVbo(new[] { v1, v2, v3, v4 }, endUvs);
-					case SegmentType.Full:
-						return SetVbo(new[] { v1, v2, v3, v4 }, fullUvs);
-					default:
-						return SetVbo(new[] { v1, v2, v3, v4 }, middleUvs);
-				}
-			}
+            //Return the VDO with the correct uvs
+            switch (type)
+            {
+                case SegmentType.Start:
+                    return SetVbo(new[] { v1, v2, v3, v4 }, startUvs);
+                case SegmentType.End:
+                    return SetVbo(new[] { v1, v2, v3, v4 }, endUvs);
+                case SegmentType.Full:
+                    return SetVbo(new[] { v1, v2, v3, v4 }, fullUvs);
+                default:
+                    return SetVbo(new[] { v1, v2, v3, v4 }, middleUvs);
+            }
 		}
 
-		protected override void GeneratedUVs()
-		{
-			if (activeSprite != null)
-			{
-				var outer = Sprites.DataUtility.GetOuterUV(activeSprite);
-				var inner = Sprites.DataUtility.GetInnerUV(activeSprite);
-				UV_TOP_LEFT = new Vector2(outer.x, outer.y);
-				UV_BOTTOM_LEFT = new Vector2(outer.x, outer.w);
-				UV_TOP_CENTER_LEFT = new Vector2(inner.x, inner.y);
-				UV_TOP_CENTER_RIGHT = new Vector2(inner.z, inner.y);
-				UV_BOTTOM_CENTER_LEFT = new Vector2(inner.x, inner.w);
-				UV_BOTTOM_CENTER_RIGHT = new Vector2(inner.z, inner.w);
-				UV_TOP_RIGHT = new Vector2(outer.z, outer.y);
-				UV_BOTTOM_RIGHT = new Vector2(outer.z, outer.w);
-			}
-			else
-			{
-				UV_TOP_LEFT = Vector2.zero;
-				UV_BOTTOM_LEFT = new Vector2(0, 1);
-				UV_TOP_CENTER_LEFT = new Vector2(0.5f, 0);
-				UV_TOP_CENTER_RIGHT = new Vector2(0.5f, 0);
-				UV_BOTTOM_CENTER_LEFT = new Vector2(0.5f, 1);
-				UV_BOTTOM_CENTER_RIGHT = new Vector2(0.5f, 1);
-				UV_TOP_RIGHT = new Vector2(1, 0);
-				UV_BOTTOM_RIGHT = Vector2.one;
-			}
+        protected override void GeneratedUVs()
+        {
+            if (activeSprite != null)
+            {
+                var outer = Sprites.DataUtility.GetOuterUV(activeSprite);
+                var inner = Sprites.DataUtility.GetInnerUV(activeSprite);
+                UV_TOP_LEFT = new Vector2(outer.x, outer.y);
+                UV_BOTTOM_LEFT = new Vector2(outer.x, outer.w);
+                UV_TOP_CENTER_LEFT = new Vector2(inner.x, inner.y);
+                UV_TOP_CENTER_RIGHT = new Vector2(inner.z, inner.y);
+                UV_BOTTOM_CENTER_LEFT = new Vector2(inner.x, inner.w);
+                UV_BOTTOM_CENTER_RIGHT = new Vector2(inner.z, inner.w);
+                UV_TOP_RIGHT = new Vector2(outer.z, outer.y);
+                UV_BOTTOM_RIGHT = new Vector2(outer.z, outer.w);
+            }
+            else
+            {
+                UV_TOP_LEFT = Vector2.zero;
+                UV_BOTTOM_LEFT = new Vector2(0, 1);
+                UV_TOP_CENTER_LEFT = new Vector2(0.5f, 0);
+                UV_TOP_CENTER_RIGHT = new Vector2(0.5f, 0);
+                UV_BOTTOM_CENTER_LEFT = new Vector2(0.5f, 1);
+                UV_BOTTOM_CENTER_RIGHT = new Vector2(0.5f, 1);
+                UV_TOP_RIGHT = new Vector2(1, 0);
+                UV_BOTTOM_RIGHT = Vector2.one;
+            }
 
 
-			startUvs = new[] { UV_TOP_LEFT, UV_BOTTOM_LEFT, UV_BOTTOM_CENTER_LEFT, UV_TOP_CENTER_LEFT };
-			middleUvs = new[] { UV_TOP_CENTER_LEFT, UV_BOTTOM_CENTER_LEFT, UV_BOTTOM_CENTER_RIGHT, UV_TOP_CENTER_RIGHT };
-			endUvs = new[] { UV_TOP_CENTER_RIGHT, UV_BOTTOM_CENTER_RIGHT, UV_BOTTOM_RIGHT, UV_TOP_RIGHT };
-			fullUvs = new[] { UV_TOP_LEFT, UV_BOTTOM_LEFT, UV_BOTTOM_RIGHT, UV_TOP_RIGHT };
-		}
+            startUvs = new[] { UV_TOP_LEFT, UV_BOTTOM_LEFT, UV_BOTTOM_CENTER_LEFT, UV_TOP_CENTER_LEFT };
+            middleUvs = new[] { UV_TOP_CENTER_LEFT, UV_BOTTOM_CENTER_LEFT, UV_BOTTOM_CENTER_RIGHT, UV_TOP_CENTER_RIGHT };
+            endUvs = new[] { UV_TOP_CENTER_RIGHT, UV_BOTTOM_CENTER_RIGHT, UV_BOTTOM_RIGHT, UV_TOP_RIGHT };
+            fullUvs = new[] { UV_TOP_LEFT, UV_BOTTOM_LEFT, UV_BOTTOM_RIGHT, UV_TOP_RIGHT };
+        }
 
-		protected override void ResolutionToNativeSize(float distance)
-		{
-			if (UseNativeSize)
-			{
-				m_Resolution = distance / (activeSprite.rect.width / pixelsPerUnit);
-				lineThickness = activeSprite.rect.height / pixelsPerUnit;
-			}
-		}
-	}
+        protected override void ResolutionToNativeSize(float distance)
+        {
+            if (UseNativeSize)
+            {
+                m_Resolution = distance / (activeSprite.rect.width / pixelsPerUnit);
+                lineThickness = activeSprite.rect.height / pixelsPerUnit;
+            }
+        }
+    }
 }
